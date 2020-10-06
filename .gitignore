@@ -1,2 +1,4 @@
 .venv
 .vscode
+backend/todo.db
+backend/__pycache__
