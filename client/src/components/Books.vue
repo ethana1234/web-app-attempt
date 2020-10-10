@@ -5,7 +5,9 @@
       <div class="col-sm-10">
         <h1>Books</h1>
         <hr><br><br>
-        <button type="button" class="btn btn-success btn-sm" v-b-modal.book-modal>Add Book</button>
+        <alert :message=message v-if="showMessage"></alert>
+        <falert :message=message v-if="showError"></falert>
+        <button type="button" class="btn btn-success btn-sm" @click="openAddModal">Add Book</button>
         <br><br>
         <table class="table table-hover">
           <thead>
@@ -35,45 +37,15 @@
         </table>
       </div>
     </div>
-    <b-modal ref="addBookModal"
-            id="book-modal"
-            title="Add a new book"
-            hide-footer>
-      <b-form @submit="onSubmit" @reset="onReset" class="w-100">
-        <b-form-group id="form-title-group"
-                      label="Title:"
-                      label-for="form-title-input">
-          <b-form-input id="form-title-input"
-                        type="text"
-                        v-model="addBookForm.title"
-                        required
-                        placeholder="Enter title">
-          </b-form-input>
-        </b-form-group>
-        <b-form-group id="form-author-group"
-                      label="Author:"
-                      label-for="form-author-input">
-          <b-form-input id="form-author-input"
-                        type="text"
-                        v-model="addBookForm.author"
-                        required
-                        placeholder="Enter author">
-          </b-form-input>
-        </b-form-group>
-        <b-form-group id="form-read-group">
-          <b-form-checkbox-group v-model="addBookForm.read" id="form-checks">
-            <b-form-checkbox value="true">Read?</b-form-checkbox>
-          </b-form-checkbox-group>
-        </b-form-group>
-        <b-button type="submit" variant="primary">Submit</b-button>
-        <b-button type="reset" variant="danger">Reset</b-button>
-      </b-form>
-    </b-modal>
+    <addBookModal ref="addBookModal1" v-if="showAddModal" @submit="onSubmit" @reset="onReset" />
   </div>
 </template>
 
 <script>
 import axios from 'axios';
+import Alert from './Alert.vue';
+import FailAlert from './FailAlert.vue';
+import AddBookModal from './AddBookModal.vue';
 
 export default {
   data() {
@@ -84,7 +56,22 @@ export default {
         author: '',
         read: [],
       },
+      editForm: {
+        id: '',
+        title: '',
+        author: '',
+        read: [],
+      },
+      message: '',
+      showMessage: false,
+      showError: false,
+      showAddModal: false,
     };
+  },
+  components: {
+    alert: Alert,
+    falert: FailAlert,
+    addBookModal: AddBookModal,
   },
   methods: {
     getBooks() {
@@ -101,12 +88,16 @@ export default {
     addBook(payload) {
       const path = 'http://localhost:5000/books';
       axios.post(path, payload)
-        .then(() => {
+        .then((response) => {
           this.getBooks();
+          this.message = response.data.message;
+          this.showMessage = true;
         })
         .catch((error) => {
           // eslint-disable-next-line
           console.log(error);
+          this.message = error;
+          this.showError = true;
           this.getBooks();
         });
     },
@@ -117,21 +108,27 @@ export default {
     },
     onSubmit(evt) {
       evt.preventDefault();
-      this.$refs.addBookModal.hide();
-      let read = false;
-      if (this.addBookForm.read[0]) read = true;
+      let readCheck = false;
+      if (this.addBookForm.read[0]) readCheck = true;
       const payload = {
         title: this.addBookForm.title,
         author: this.addBookForm.author,
-        read,
+        read: readCheck,
       };
       this.addBook(payload);
       this.initForm();
     },
     onReset(evt) {
       evt.preventDefault();
-      this.$refs.addBookModal.hide();
       this.initForm();
+      this.showMessage = false;
+      this.showError = false;
+    },
+    openAddModal() {
+      this.showAddModal = true;
+    },
+    closeAddModal() {
+      this.showAddModal = false;
     },
   },
   created() {
